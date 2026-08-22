@@ -1,21 +1,20 @@
 name: Auto-merge
 
-# Merges a pull request once every check on its head commit has passed.
+# Merges a pull request once every check on its head commit has passed, so no human has
+# to be awake for a green build to land.
 #
-# This repository is public, so branch protection is available and is enabled: `main`
-# requires a pull request and a passing Guard check, which *prevents* an unchecked merge.
-# This workflow *performs* the checked merge, so no human has to be awake for it. The two
-# are complementary — protection is the gate, this is the hand that opens it.
+# Two properties make it trustworthy:
 #
-# The workflow_run trigger runs the copy of this file on the default branch, never the
-# copy in the pull request. A pull request therefore cannot weaken its own merge gate.
+# 1. `workflow_run` executes the copy of this file on the default branch, never the copy
+#    in the pull request. A pull request cannot weaken its own merge gate.
+# 2. A check that has not finished is treated as "not yet", never as "go ahead". Green by
+#    absence is the failure mode this organization keeps finding.
+#
+# No `workflows:` filter on purpose. Naming one means auto-merge only re-evaluates when
+# that workflow finishes, so a slower job added later by a packet would never re-trigger
+# the check and the pull request would sit green and unmerged.
 
 on:
-  # No `workflows:` filter on purpose. Naming one workflow means auto-merge only
-  # re-evaluates when that one finishes, so a slower job added later by a packet would
-  # never trigger a re-check and the pull request would sit green and unmerged. Every
-  # workflow completion re-evaluates; the job below exits quietly while anything is
-  # still running.
   workflow_run:
     types: [completed]
 
@@ -44,8 +43,6 @@ jobs:
             exit 0
           fi
 
-          # Every check run on this commit must have finished, and none may have failed.
-          # A pending check means the answer is "not yet", never "go ahead".
           CHECKS="$(gh api "/repos/$REPO/commits/$HEAD_SHA/check-runs" --paginate \
             --jq '.check_runs[] | "\(.name)\t\(.status)\t\(.conclusion // "pending")"')"
           echo "$CHECKS"
