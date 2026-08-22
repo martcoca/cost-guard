@@ -1,0 +1,73 @@
+name: Auto-merge
+
+# Merges a pull request once every check on its head commit has passed.
+#
+# This repository is public, so branch protection is available and is enabled: `main`
+# requires a pull request and a passing Guard check, which *prevents* an unchecked merge.
+# This workflow *performs* the checked merge, so no human has to be awake for it. The two
+# are complementary — protection is the gate, this is the hand that opens it.
+#
+# The workflow_run trigger runs the copy of this file on the default branch, never the
+# copy in the pull request. A pull request therefore cannot weaken its own merge gate.
+
+on:
+  # No `workflows:` filter on purpose. Naming one workflow means auto-merge only
+  # re-evaluates when that one finishes, so a slower job added later by a packet would
+  # never trigger a re-check and the pull request would sit green and unmerged. Every
+  # workflow completion re-evaluates; the job below exits quietly while anything is
+  # still running.
+  workflow_run:
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge:
+    name: Merge when green
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge the pull request if every check passed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          PR="$(gh api "/repos/$REPO/commits/$HEAD_SHA/pulls" \
+            --jq '[.[] | select(.state == "open" and .draft == false)][0].number // empty')"
+          if [ -z "$PR" ]; then
+            echo "No open pull request for $HEAD_SHA; nothing to merge."
+            exit 0
+          fi
+
+          # Every check run on this commit must have finished, and none may have failed.
+          # A pending check means the answer is "not yet", never "go ahead".
+          CHECKS="$(gh api "/repos/$REPO/commits/$HEAD_SHA/check-runs" --paginate \
+            --jq '.check_runs[] | "\(.name)\t\(.status)\t\(.conclusion // "pending")"')"
+          echo "$CHECKS"
+
+          if [ -z "$CHECKS" ]; then
+            echo "No check runs reported for $HEAD_SHA; refusing to merge."
+            exit 1
+          fi
+
+          UNFINISHED="$(printf '%s\n' "$CHECKS" | awk -F'\t' '$2 != "completed"' || true)"
+          if [ -n "$UNFINISHED" ]; then
+            echo "Checks still running; leaving PR #$PR for the next completion event."
+            exit 0
+          fi
+
+          BAD="$(printf '%s\n' "$CHECKS" \
+            | awk -F'\t' '$3 != "success" && $3 != "skipped" && $3 != "neutral"' || true)"
+          if [ -n "$BAD" ]; then
+            echo "Refusing to merge PR #$PR; these checks did not pass:"
+            printf '%s\n' "$BAD"
+            exit 1
+          fi
+
+          echo "All checks passed. Merging PR #$PR."
+          gh pr merge "$PR" --squash --delete-branch --repo "$REPO"
