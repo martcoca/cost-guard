@@ -1,0 +1,21 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.6.0",
+  "resource_changes": [
+    {
+      "address": "aws_nat_gateway.example",
+      "mode": "managed",
+      "type": "aws_nat_gateway",
+      "name": "example",
+      "provider_name": "registry.opentofu.org/hashicorp/aws",
+      "change": {
+        "actions": ["create"],
+        "before": null,
+        "after": {
+          "allocation_id": "eipalloc-placeholder",
+          "subnet_id": "subnet-placeholder"
+        }
+      }
+    }
+  ]
+}

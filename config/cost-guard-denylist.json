@@ -1,0 +1,152 @@
+[
+  {
+    "resource_type": "aws_nat_gateway",
+    "resource": "NAT Gateway",
+    "monthly_cost": "~$32/mo"
+  },
+  {
+    "resource_type": "azurerm_nat_gateway",
+    "resource": "NAT Gateway",
+    "monthly_cost": "~$32/mo"
+  },
+  {
+    "resource_type": "aws_lb",
+    "resource": "ALB / NLB",
+    "monthly_cost": "~$16–20/mo"
+  },
+  {
+    "resource_type": "google_compute_forwarding_rule",
+    "resource": "Cloud Load Balancing",
+    "monthly_cost": "~$18/mo"
+  },
+  {
+    "resource_type": "google_compute_global_forwarding_rule",
+    "resource": "Cloud Load Balancing",
+    "monthly_cost": "~$18/mo"
+  },
+  {
+    "resource_type": "azurerm_lb",
+    "resource": "Azure Load Balancer",
+    "monthly_cost": "~$18/mo"
+  },
+  {
+    "resource_type": "azurerm_application_gateway",
+    "resource": "Application Gateway",
+    "monthly_cost": "~$100+/mo"
+  },
+  {
+    "resource_type": "azurerm_firewall",
+    "resource": "Azure Firewall",
+    "monthly_cost": "~$900+/mo"
+  },
+  {
+    "resource_type": "azurerm_express_route_circuit",
+    "resource": "ExpressRoute circuit",
+    "monthly_cost": "~$55+/mo"
+  },
+  {
+    "resource_type": "aws_eks_cluster",
+    "resource": "EKS control plane",
+    "monthly_cost": "~$73/mo"
+  },
+  {
+    "resource_type": "google_container_cluster",
+    "resource": "GKE control plane",
+    "monthly_cost": "~$73/mo"
+  },
+  {
+    "resource_type": "azurerm_kubernetes_cluster",
+    "resource": "AKS cluster",
+    "monthly_cost": "~$73/mo plus nodes"
+  },
+  {
+    "resource_type": "aws_instance",
+    "resource": "Always-on virtual machine",
+    "monthly_cost": "$8–70+/mo"
+  },
+  {
+    "resource_type": "google_compute_instance",
+    "resource": "Always-on virtual machine",
+    "monthly_cost": "$8–70+/mo"
+  },
+  {
+    "resource_type": "azurerm_linux_virtual_machine",
+    "resource": "Always-on virtual machine",
+    "monthly_cost": "$8–70+/mo"
+  },
+  {
+    "resource_type": "azurerm_windows_virtual_machine",
+    "resource": "Always-on virtual machine",
+    "monthly_cost": "$8–70+/mo"
+  },
+  {
+    "resource_type": "azurerm_linux_virtual_machine_scale_set",
+    "resource": "Virtual machine scale set",
+    "monthly_cost": "$8–70+/mo per instance"
+  },
+  {
+    "resource_type": "azurerm_windows_virtual_machine_scale_set",
+    "resource": "Virtual machine scale set",
+    "monthly_cost": "$8–70+/mo per instance"
+  },
+  {
+    "resource_type": "aws_route53_zone",
+    "resource": "Route 53 hosted zone",
+    "monthly_cost": "$0.50/mo"
+  },
+  {
+    "resource_type": "aws_db_instance",
+    "resource": "Always-on managed SQL",
+    "monthly_cost": "$15–45/mo"
+  },
+  {
+    "resource_type": "aws_rds_cluster",
+    "resource": "Always-on managed SQL",
+    "monthly_cost": "$15–45/mo"
+  },
+  {
+    "resource_type": "aws_rds_cluster_instance",
+    "resource": "Always-on managed SQL",
+    "monthly_cost": "$15–45/mo"
+  },
+  {
+    "resource_type": "google_sql_database_instance",
+    "resource": "Always-on managed SQL",
+    "monthly_cost": "$15–45/mo"
+  },
+  {
+    "resource_type": "azurerm_mssql_database",
+    "resource": "Always-on managed SQL",
+    "monthly_cost": "$15–45/mo"
+  },
+  {
+    "resource_type": "azurerm_mssql_managed_instance",
+    "resource": "SQL Managed Instance",
+    "monthly_cost": "$400+/mo"
+  },
+  {
+    "resource_type": "azurerm_mysql_flexible_server",
+    "resource": "Always-on managed SQL",
+    "monthly_cost": "$15–45/mo"
+  },
+  {
+    "resource_type": "azurerm_postgresql_flexible_server",
+    "resource": "Always-on managed SQL",
+    "monthly_cost": "$15–45/mo"
+  },
+  {
+    "resource_type": "aws_eip",
+    "resource": "Idle public IPv4",
+    "monthly_cost": "~$3.60/mo"
+  },
+  {
+    "resource_type": "azurerm_public_ip",
+    "resource": "Idle public IPv4",
+    "monthly_cost": "~$3.60/mo"
+  },
+  {
+    "resource_type": "aws_secretsmanager_secret",
+    "resource": "AWS Secrets Manager",
+    "monthly_cost": "$0.40/secret/mo"
+  }
+]
