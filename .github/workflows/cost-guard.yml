@@ -1,0 +1,102 @@
+name: Cost guard
+
+# Every push, not only pull requests. Three repositories depend on this one, so a broken
+# guard on any branch is worth knowing about before it becomes a tag they consume.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  exit-contract:
+    name: Exit-code contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Assert exact cost-guard exit codes
+        run: bash scripts/test-cost-guard.sh
+
+      # A suite nobody has watched fail is a suite nobody has tested. This mutates a
+      # throwaway copy of the tree and asserts the suite notices.
+      - name: The suite must be able to fail
+        run: bash scripts/test-suite-can-fail.sh
+
+  consumer:
+    name: Consumed from another repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Builds a separate git repository holding neither the guard nor the denylist, and
+      # runs the action's entrypoint against plans that repository wrote itself.
+      - name: A repository with no copy of the guard gets the right verdicts
+        run: bash scripts/demo-consumer.sh
+
+  manifest:
+    name: Action manifest resolves on a runner
+    runs-on: ubuntu-latest
+    # scripts/demo-consumer.sh cannot prove that GitHub itself accepts action.yml, because
+    # resolving `uses:` is the runner's job and not something a shell script can stand in
+    # for. This job covers that half: the runner parses the manifest, binds the inputs and
+    # outputs, and runs the composite step for real.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: A clean plan is allowed
+        id: clean
+        uses: ./
+        with:
+          plan: tests/fixtures/plan-clean.json
+
+      - name: The allow verdict reached the consumer as an output
+        run: |
+          set -euo pipefail
+          [ "${{ steps.clean.outputs.verdict }}" = "allow" ] \
+            || { echo "expected allow, got '${{ steps.clean.outputs.verdict }}'"; exit 1; }
+          [ "${{ steps.clean.outputs.exit-code }}" = "0" ] \
+            || { echo "expected exit-code 0"; exit 1; }
+
+      - name: A denied create fails the step
+        id: denied
+        continue-on-error: true
+        uses: ./
+        with:
+          plan: tests/fixtures/plan-with-nat.json
+
+      - name: The deny verdict failed the step rather than passing it
+        run: |
+          set -euo pipefail
+          [ "${{ steps.denied.outcome }}" = "failure" ] \
+            || { echo "a denied create did not fail the step"; exit 1; }
+          [ "${{ steps.denied.outputs.verdict }}" = "deny" ] \
+            || { echo "expected deny, got '${{ steps.denied.outputs.verdict }}'"; exit 1; }
+
+      # The fail-closed contract, asserted through the interface rather than only through
+      # the guard. A wrapper that quietly turned exit 2 into a pass would be the easiest
+      # possible way to lose this property without touching cost-guard.sh at all.
+      - name: Unrecognizable input fails closed through the action
+        id: garbage
+        continue-on-error: true
+        uses: ./
+        with:
+          plan: tests/fixtures/plan-unrecognizable.txt
+
+      - name: The undecidable verdict is not softer than a denial
+        run: |
+          set -euo pipefail
+          [ "${{ steps.garbage.outcome }}" = "failure" ] \
+            || { echo "unrecognizable input did not fail the step"; exit 1; }
+          [ "${{ steps.garbage.outputs.verdict }}" = "undecidable" ] \
+            || { echo "expected undecidable, got '${{ steps.garbage.outputs.verdict }}'"; exit 1; }
+          [ "${{ steps.garbage.outputs.exit-code }}" = "2" ] \
+            || { echo "expected exit-code 2"; exit 1; }
