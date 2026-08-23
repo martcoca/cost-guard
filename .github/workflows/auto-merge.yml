@@ -60,8 +60,12 @@ jobs:
             done
           }
 
-          PR="$(gh api "/repos/$REPO/commits/$HEAD_SHA/pulls" \
-            --jq '[.[] | select(.state == "open" and .draft == false)][0].number // empty')"
+          # Match the head SHA against open pull requests rather than asking
+          # /commits/{sha}/pulls, which returned 403 to the workflow token on the private
+          # repository while working on the public ones. The plain pulls list is allowed
+          # in both, so this removes a difference in behaviour by visibility.
+          PR="$(gh api "/repos/$REPO/pulls?state=open&per_page=100" --paginate \
+            --jq "[.[] | select(.head.sha == \"$HEAD_SHA\" and .draft == false)][0].number // empty")"
           if [ -z "$PR" ]; then
             echo "No open pull request for $HEAD_SHA; nothing to merge."
             exit 0
