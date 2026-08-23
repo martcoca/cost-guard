@@ -23,6 +23,9 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  # Dispatching the default-branch workflows the merge push cannot trigger needs this.
+  # Without it the dispatch returns 403 and the merged commit goes unverified.
+  actions: write
 
 jobs:
   merge:
