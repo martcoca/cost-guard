@@ -31,6 +31,9 @@ jobs:
       - name: Workflow permissions are explicit
         run: scripts/check-workflow-permissions.sh
 
+      - name: Auto-merge awaits every workflow
+        run: scripts/check-automerge-coverage.sh
+
       - name: Shell scripts parse
         run: |
           set -euo pipefail
