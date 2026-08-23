@@ -7,6 +7,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Required: an auto-merge push raises no events, so this must be dispatchable.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -33,6 +35,9 @@ jobs:
 
       - name: Auto-merge awaits every workflow
         run: scripts/check-automerge-coverage.sh
+
+      - name: Push workflows are dispatchable after an auto-merge
+        run: scripts/post-merge-workflows.sh check
 
       - name: Shell scripts parse
         run: |

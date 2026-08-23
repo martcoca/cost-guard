@@ -6,7 +6,8 @@ name: Cost guard
 on:
   push:
   pull_request:
-
+  # Required: an auto-merge push raises no events, so this must be dispatchable.
+  workflow_dispatch:
 permissions:
   contents: read
 
