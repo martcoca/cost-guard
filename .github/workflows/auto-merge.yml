@@ -30,6 +30,12 @@ jobs:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
+      - name: Check out the default branch
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+
       - name: Merge the pull request if every check passed
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -37,6 +43,22 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
+
+          # GitHub raises no events for actions taken with GITHUB_TOKEN, so the push this
+          # job creates on the default branch triggers nothing. Every `push: [main]`
+          # workflow — the plan against real cloud state, the full-length suite — would be
+          # silently skipped on precisely the commits no human reviewed. Dispatch them.
+          dispatch_default_branch_workflows() {
+            local wf
+            for wf in $(scripts/post-merge-workflows.sh list); do
+              if gh workflow run "$wf" --ref main --repo "$REPO"; then
+                echo "dispatched $wf on main"
+              else
+                echo "::error::could not dispatch $wf; the merged commit is unverified"
+                exit 1
+              fi
+            done
+          }
 
           PR="$(gh api "/repos/$REPO/commits/$HEAD_SHA/pulls" \
             --jq '[.[] | select(.state == "open" and .draft == false)][0].number // empty')"
@@ -75,6 +97,7 @@ jobs:
           # and must not report failure: the pull request did merge, and a red run here
           # would be noise that hides a real one.
           if gh pr merge "$PR" --squash --delete-branch --repo "$REPO"; then
+            dispatch_default_branch_workflows
             exit 0
           fi
           STATE="$(gh pr view "$PR" --repo "$REPO" --json state --jq .state)"
