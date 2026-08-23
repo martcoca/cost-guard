@@ -8,13 +8,13 @@ Check, and enough context to execute without reading another repository.
 | # | Packet | Status | Is |
 |---|---|---|---|
 | 1 | [`0010-E01-T01.md`](0010-E01-T01.md) | done | Move the guard and the denylist here, and give them an interface another repository's CI can consume without copying either file |
+| 2 | [`0010-E01-T05.md`](0010-E01-T05.md) | not started | One denylist change, demonstrably enforced by all three clouds. The initiative's actual claim, currently untested |
 
 Take the packet the Founder names. Otherwise take the next one in this table whose
 `Status:` is not `done`. The table is the order; the numbers are only identity.
 
-T02 — making the three platform repositories consume this instead of their own copies —
-is deliberately unwritten. Its shape depends on the interface T01 chooses, and writing it
-now would put a guess into a packet.
+T02, T03 and T04 are the three consumer cutovers and live in the platform repositories,
+not here. T05 below is the one that tests this initiative's actual claim.
 
 ## Rules
 
