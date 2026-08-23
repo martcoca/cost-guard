@@ -69,4 +69,18 @@ jobs:
           fi
 
           echo "All checks passed. Merging PR #$PR."
-          gh pr merge "$PR" --squash --delete-branch --repo "$REPO"
+
+          # Several workflows finishing together each trigger this one, so two runs can
+          # reach the merge at the same time. The loser gets "merge already in progress"
+          # and must not report failure: the pull request did merge, and a red run here
+          # would be noise that hides a real one.
+          if gh pr merge "$PR" --squash --delete-branch --repo "$REPO"; then
+            exit 0
+          fi
+          STATE="$(gh pr view "$PR" --repo "$REPO" --json state --jq .state)"
+          if [ "$STATE" = MERGED ]; then
+            echo "PR #$PR was merged by a concurrent run of this workflow."
+            exit 0
+          fi
+          echo "Merge failed and PR #$PR is $STATE."
+          exit 1
