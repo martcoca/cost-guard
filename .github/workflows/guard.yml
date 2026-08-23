@@ -33,6 +33,10 @@ jobs:
       - name: Workflow permissions are explicit
         run: scripts/check-workflow-permissions.sh
 
+      - name: A completed packet arrives with its evidence
+        if: github.event_name == 'pull_request'
+        run: scripts/check-evidence.sh "${{ github.event.pull_request.base.sha }}"
+
       - name: Auto-merge awaits every workflow
         run: scripts/check-automerge-coverage.sh
 
