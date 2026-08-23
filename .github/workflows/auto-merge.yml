@@ -10,14 +10,15 @@ name: Auto-merge
 # 2. A check that has not finished is treated as "not yet", never as "go ahead". Green by
 #    absence is the failure mode this organization keeps finding.
 #
-# The `workflows:` list must name every other workflow here. Omitting it does not mean
-# "all" — it matches nothing and auto-merge never fires, which looks exactly like a pull
-# request sitting green and unmerged. check-automerge-coverage.sh asserts the list is
-# complete, so adding a workflow without listing it fails CI.
+# The `workflows:` list must name every other workflow in the repository. Omitting the
+# list does not mean "all" — it matches nothing and auto-merge never fires at all, which
+# looks exactly like a pull request sitting green and unmerged.
+# `check-automerge-coverage.sh` asserts the list is complete, so adding a workflow without
+# listing it fails CI rather than silently disabling or short-circuiting the gate.
 
 on:
   workflow_run:
-    workflows: ["Guard", "Cost guard"]
+    workflows: ["REPLACE_WITH_EVERY_OTHER_WORKFLOW_NAME"]
     types: [completed]
 
 permissions:
@@ -60,8 +61,12 @@ jobs:
             done
           }
 
-          PR="$(gh api "/repos/$REPO/commits/$HEAD_SHA/pulls" \
-            --jq '[.[] | select(.state == "open" and .draft == false)][0].number // empty')"
+          # Match the head SHA against open pull requests rather than asking
+          # /commits/{sha}/pulls, which returned 403 to the workflow token on the private
+          # repository while working on the public ones. The plain pulls list is allowed
+          # in both, so this removes a difference in behaviour by visibility.
+          PR="$(gh api "/repos/$REPO/pulls?state=open&per_page=100" --paginate \
+            --jq "[.[] | select(.head.sha == \"$HEAD_SHA\" and .draft == false)][0].number // empty")"
           if [ -z "$PR" ]; then
             echo "No open pull request for $HEAD_SHA; nothing to merge."
             exit 0
