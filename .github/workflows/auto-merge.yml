@@ -10,12 +10,14 @@ name: Auto-merge
 # 2. A check that has not finished is treated as "not yet", never as "go ahead". Green by
 #    absence is the failure mode this organization keeps finding.
 #
-# No `workflows:` filter on purpose. Naming one means auto-merge only re-evaluates when
-# that workflow finishes, so a slower job added later by a packet would never re-trigger
-# the check and the pull request would sit green and unmerged.
+# The `workflows:` list must name every other workflow here. Omitting it does not mean
+# "all" — it matches nothing and auto-merge never fires, which looks exactly like a pull
+# request sitting green and unmerged. check-automerge-coverage.sh asserts the list is
+# complete, so adding a workflow without listing it fails CI.
 
 on:
   workflow_run:
+    workflows: ["Guard", "Cost guard"]
     types: [completed]
 
 permissions:
