@@ -7,7 +7,7 @@ Check, and enough context to execute without reading another repository.
 
 | # | Packet | Status | Is |
 |---|---|---|---|
-| 1 | [`0010-E01-T01.md`](0010-E01-T01.md) | not started | Move the guard and the denylist here, and give them an interface another repository's CI can consume without copying either file |
+| 1 | [`0010-E01-T01.md`](0010-E01-T01.md) | done | Move the guard and the denylist here, and give them an interface another repository's CI can consume without copying either file |
 
 Take the packet the Founder names. Otherwise take the next one in this table whose
 `Status:` is not `done`. The table is the order; the numbers are only identity.

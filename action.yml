@@ -1,0 +1,31 @@
+name: 'Cost guard'
+description: >-
+  Fail an OpenTofu plan that would create a resource type on the shared cost denylist.
+  The guard and the denylist travel with this action; the consuming repository holds
+  neither file.
+
+inputs:
+  plan:
+    description: >-
+      Path to OpenTofu plan output — either `tofu show -json` (one document with a
+      resource_changes array) or `tofu plan -json` (a stream of planned_change events).
+      A piped plan must be redirected to a file first, so the guard's exit code is read
+      from the guard and not from the last process in a pipeline.
+    required: true
+
+outputs:
+  verdict:
+    description: '`allow` (exit 0), `deny` (exit 1), or `undecidable` (exit 2).'
+    value: ${{ steps.guard.outputs.verdict }}
+  exit-code:
+    description: 'The guard''s exact exit code: 0, 1, or 2.'
+    value: ${{ steps.guard.outputs.exit-code }}
+
+runs:
+  using: composite
+  steps:
+    - id: guard
+      shell: bash
+      env:
+        INPUT_PLAN: ${{ inputs.plan }}
+      run: bash "$GITHUB_ACTION_PATH/scripts/action-entrypoint.sh"
