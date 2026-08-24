@@ -129,4 +129,4 @@ if [ "$failed" -ne 0 ]; then
   exit 1
 fi
 
-printf '\nThe suite reacts to a broken denylist and to a broken fail-closed path.\n'
+printf '\nThe suite reacts to a broken denylist, a broken fail-closed path, a guard that\nreaches for the network, and a freshness signal that calls unknown current.\n'

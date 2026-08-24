@@ -89,6 +89,69 @@ is a place the fail-closed contract could be lost without `cost-guard.sh` changi
 `.github/workflows/cost-guard.yml` asserts through the action, not only against the guard,
 for exactly that reason.
 
+## Knowing whether your pin is current
+
+The guard tells you whether a plan is allowed. It cannot tell you whether it is *the
+current guard* — a consumer pinned to an old release enforces the denylist that release
+froze, exits `0`, and looks exactly like a consumer that is up to date with nothing to
+deny. That is how a denial added here can be absent in a consumer with nobody noticing,
+which is what happened in T05.
+
+A **second action** reports it:
+
+```yaml
+- uses: martcoca/cost-guard@v1.0.1
+  with:
+    plan: plan.json
+
+- uses: martcoca/cost-guard/freshness@v1.0.1
+  if: always()
+  with:
+    pin: martcoca/cost-guard@v1.0.1
+```
+
+| Output | Values |
+|---|---|
+| `status` | `current`, `behind`, `unknown` |
+| `pinned-ref` / `pinned-commit` | what this repository pins, and what it resolves to |
+| `latest-release` / `latest-commit` | the current release, and what it resolves to |
+| `detail` | one line explaining the status |
+
+It writes a warning annotation and a job summary. It exits `0` by default; set
+`fail-on-stale: 'true'` to fail the step when the pin is behind.
+
+### Three rules, and each is load-bearing
+
+**The guard's verdict never depends on the network.** That is why freshness is a separate
+action rather than another output of the guard. A denied resource is denied whether or not
+GitHub is reachable, and a consumer reading the guard step's outcome must never have to
+wonder whether the failure was a denial or a failed lookup. `scripts/test-no-network.sh`
+holds this down from both sides: it greps the guard for network primitives, *and* runs the
+exit contract with the network genuinely removed — and fails rather than skipping if the
+host offers no isolation to remove it with.
+
+**Unknown is reported as unknown, never as current.** If the release cannot be looked up,
+`status` is `unknown` and says so. "We could not ask" and "you are up to date" are
+different facts, and collapsing them recreates the silence this exists to remove.
+
+**`unknown` never fails the step, even with `fail-on-stale: 'true'`.** Failing because a
+lookup did not happen is exactly the network dependency this design keeps out of consumers'
+CI — it would make every pipeline depend on an API call its plan does not need.
+
+### It compares versions, not strings
+
+`@v1` and `@v1.0.1` are different strings and, once the moving tag has moved, the same
+version. A string comparison reports a consumer on `@v1` as behind forever. Both refs are
+therefore resolved to commits and the **commits** are compared, so `@v1`, `@v1.0.1` and a
+raw SHA of the same commit all read as `current`. T05 traced this exact confusion.
+
+### What this does not do
+
+It does not bump anything. A consumer told it is behind is still behind until someone opens
+a pull request there, and that window is unbounded — nothing here shortens it, it only stops
+it being invisible. `docs/dependabot-for-consumers.yml` is the start of an answer, with two
+demonstrated reasons it does not work on these consumers yet.
+
 ## Testing
 
 | Command | Asserts |
@@ -96,6 +159,9 @@ for exactly that reason.
 | `scripts/test-cost-guard.sh` | the exit contract across six inputs |
 | `scripts/test-suite-can-fail.sh` | that the suite above can actually go red |
 | `scripts/demo-consumer.sh` | the action working from a repository holding neither file |
+| `scripts/test-freshness.sh` | every freshness rule, against a stubbed API |
+| `scripts/test-no-network.sh` | the exit contract with the network actually removed |
+| `scripts/probe-propagation.sh` | whether a given pin enforces a given plan |
 
 All three run in CI on every push. `demo-consumer.sh` builds a throwaway consumer
 repository and runs the action's real entrypoint against plans that repository wrote

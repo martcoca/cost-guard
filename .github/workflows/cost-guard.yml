@@ -24,9 +24,20 @@ jobs:
         run: bash scripts/test-cost-guard.sh
 
       # A suite nobody has watched fail is a suite nobody has tested. This mutates a
-      # throwaway copy of the tree and asserts the suite notices.
+      # throwaway copy of the tree and asserts the suite notices — including a guard that
+      # quietly acquires a network call, which changes no fixture's expected exit code.
       - name: The suite must be able to fail
         run: bash scripts/test-suite-can-fail.sh
+
+      - name: The freshness signal obeys its own rules
+        run: bash scripts/test-freshness.sh
+
+      # The property the freshness signal was made a separate action to protect. Runs the
+      # exit contract with the network actually removed, and fails rather than skipping if
+      # this runner offers no isolation — an unproven proof is what this repository keeps
+      # finding at the bottom of its own defects.
+      - name: The verdict does not depend on the network
+        run: bash scripts/test-no-network.sh
 
   consumer:
     name: Consumed from another repository
@@ -101,3 +112,65 @@ jobs:
             || { echo "expected undecidable, got '${{ steps.garbage.outputs.verdict }}'"; exit 1; }
           [ "${{ steps.garbage.outputs.exit-code }}" = "2" ] \
             || { echo "expected exit-code 2"; exit 1; }
+
+  freshness:
+    name: Freshness reported through the action
+    runs-on: ubuntu-latest
+    # scripts/test-freshness.sh covers the rules with a stubbed API. This covers what a
+    # stub cannot: that the runner resolves the sub-action, binds its inputs and outputs,
+    # and that a real release lookup against a real repository behaves as documented.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: An old immutable pin is reported behind
+        id: old
+        uses: ./freshness
+        with:
+          pin: martcoca/cost-guard@v1.0.0
+
+      - name: The moving tag is reported current, not behind
+        id: moving
+        uses: ./freshness
+        with:
+          pin: martcoca/cost-guard@v1
+
+      # The rule that keeps every consumer's CI independent of this lookup. A repository
+      # that cannot be reached must report unknown and must still pass, even asking to
+      # fail on staleness.
+      - name: A repository that cannot be reached is unknown, and does not fail
+        id: unreachable
+        uses: ./freshness
+        with:
+          pin: martcoca/does-not-exist-cost-guard@v1.0.0
+          fail-on-stale: 'true'
+
+      - name: Assert the three statuses, and that unknown never became current
+        shell: bash
+        env:
+          OLD: ${{ steps.old.outputs.status }}
+          MOVING: ${{ steps.moving.outputs.status }}
+          UNREACHABLE: ${{ steps.unreachable.outputs.status }}
+          UNREACHABLE_OUTCOME: ${{ steps.unreachable.outcome }}
+        run: |
+          set -euo pipefail
+          failed=0
+          assert() {
+            local label=$1 want=$2 got=$3
+            if [[ "$got" != "$want" ]]; then
+              printf '%s: expected %s, got %s\n' "$label" "$want" "$got" >&2
+              failed=1
+            else
+              printf '%s: %s\n' "$label" "$got"
+            fi
+          }
+          assert 'pinned to v1.0.0'        behind  "$OLD"
+          assert 'pinned to the moved v1'  current "$MOVING"
+          assert 'unreachable repository'  unknown "$UNREACHABLE"
+          assert 'unreachable step result' success "$UNREACHABLE_OUTCOME"
+          [[ "$failed" -eq 0 ]] || {
+            printf '\nThe freshness signal does not behave as documented.\n' >&2
+            exit 1
+          }
+

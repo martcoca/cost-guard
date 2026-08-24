@@ -1,0 +1,45 @@
+# A Dependabot configuration for a repository that consumes the cost guard.
+#
+# NOT ENABLED ANYWHERE YET, AND IT WILL NOT WORK AS-IS. Adopting it is T02's job, and two
+# things have to change in the consumer first — both demonstrated in
+# evidence/0010-E02-T01.md, not guessed:
+#
+#   1. Dependabot's github-actions ecosystem updates `.github/workflows/*` and a root
+#      `action.yml`, and nothing else. It will not touch `config/cost-guard-action.txt`.
+#      Every consumer's check-ci-contract.sh asserts that every `uses:` equals that file,
+#      so a Dependabot pull request bumps the workflows, contradicts the pin file, and
+#      goes red. Verified against all three consumers:
+#         Workflow uses martcoca/cost-guard@v1.0.2 but the pin in
+#         config/cost-guard-action.txt is martcoca/cost-guard@v1.0.1.
+#      Either the pin file goes away and the contract check reads the version out of the
+#      workflows, or the check learns to accept a bump in progress.
+#
+#   2. platform-azure additionally checks the release out at `ref:` for its
+#      denylist-agreement job. That is an input to actions/checkout, not a `uses:` ref, so
+#      Dependabot will not update it either. Even with the pin file solved, azure fails:
+#         Missing required contract text in .github/workflows/cost-guard.yml: ref: v1.0.2
+#
+# And a decision someone has to make before this is turned on: these repositories merge
+# automatically on green. With that combination, what the guard denies can change in a
+# consumer with no human reading the diff — which is the property all three consumers
+# deliberately chose immutable pins to prevent. Dependabot plus auto-merge quietly reverses
+# that decision. Either that is intended and should be written down, or these pull requests
+# need a label that auto-merge declines to merge.
+
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    # For github-actions this must be "/". Dependabot then scans .github/workflows and a
+    # root action.yml. It is not a path to search below.
+    directory: "/"
+    schedule:
+      interval: daily
+    labels:
+      - dependencies
+      - cost-guard-pin
+    commit-message:
+      prefix: "deps"
+    groups:
+      cost-guard:
+        patterns:
+          - "martcoca/cost-guard*"
