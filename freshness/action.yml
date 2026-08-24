@@ -1,0 +1,60 @@
+name: 'Cost guard freshness'
+description: >-
+  Report whether this repository's cost-guard pin is behind the current release. A separate
+  action from the guard on purpose: the guard's verdict must never depend on the network,
+  and freshness can only be known by asking.
+
+inputs:
+  pin:
+    description: >-
+      What this repository pins — `owner/repo@ref`, or just `ref` alongside `repository`.
+      Point it at the same string the guard's `uses:` carries, or at the pin file that
+      string is checked against.
+    required: true
+  repository:
+    description: 'Repository to check when `pin` carries no owner/repo.'
+    required: false
+    default: 'martcoca/cost-guard'
+  fail-on-stale:
+    description: >-
+      Fail the step when the pin is behind. Never fails on `unknown` whatever this is set
+      to — failing because a lookup did not happen is the network dependency this action
+      exists to keep out of CI.
+    required: false
+    default: 'false'
+  token:
+    description: 'Token for the release lookup. Public repositories work without one.'
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  status:
+    description: '`current`, `behind`, or `unknown`. Never `current` by default.'
+    value: ${{ steps.freshness.outputs.status }}
+  pinned-ref:
+    description: 'The ref this repository pins.'
+    value: ${{ steps.freshness.outputs.pinned-ref }}
+  pinned-commit:
+    description: 'The commit that ref resolves to, empty if it could not be resolved.'
+    value: ${{ steps.freshness.outputs.pinned-commit }}
+  latest-release:
+    description: 'The current release tag, empty if it could not be determined.'
+    value: ${{ steps.freshness.outputs.latest-release }}
+  latest-commit:
+    description: 'The commit the current release resolves to.'
+    value: ${{ steps.freshness.outputs.latest-commit }}
+  detail:
+    description: 'One line explaining the status, suitable for a comment or a summary.'
+    value: ${{ steps.freshness.outputs.detail }}
+
+runs:
+  using: composite
+  steps:
+    - id: freshness
+      shell: bash
+      env:
+        INPUT_PIN: ${{ inputs.pin }}
+        INPUT_REPOSITORY: ${{ inputs.repository }}
+        INPUT_FAIL_ON_STALE: ${{ inputs.fail-on-stale }}
+        GH_TOKEN: ${{ inputs.token }}
+      run: bash "$GITHUB_ACTION_PATH/../scripts/freshness.sh"
