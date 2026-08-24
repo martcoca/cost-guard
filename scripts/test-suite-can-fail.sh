@@ -109,9 +109,13 @@ give_the_guard_a_network_call() {
 # without a test going red.
 report_unknown_as_current() {
   local sandbox=$1
-  perl -0pi -e 's/  status=unknown\n  detail=.the current release could not be determined./  status=current\n  detail="the current release could not be determined"/' \
-    "${sandbox}/scripts/freshness.sh"
-  grep -q 'status=current$' "${sandbox}/scripts/freshness.sh" \
+  local f="${sandbox}/scripts/freshness.sh"
+  # Every branch that concludes `unknown` now concludes `current` instead. The guard below
+  # asserts the word is gone entirely, rather than asserting a string that was already in
+  # the file for another reason — a mutation check that passes without mutating is worse
+  # than no check, because it reports the suite as sound.
+  perl -pi -e 's/^(\s*)status=unknown$/${1}status=current/' "$f"
+  ! grep -q 'status=unknown' "$f" \
     || { printf 'mutation did not apply cleanly\n' >&2; exit 1; }
 }
 
