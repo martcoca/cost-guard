@@ -18,7 +18,7 @@ name: Auto-merge
 
 on:
   workflow_run:
-    workflows: ["REPLACE_WITH_EVERY_OTHER_WORKFLOW_NAME"]
+    workflows: ["Guard", "Cost guard"]
     types: [completed]
 
 permissions:
