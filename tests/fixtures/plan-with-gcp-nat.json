@@ -1,0 +1,21 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.6.0",
+  "resource_changes": [
+    {
+      "address": "google_compute_router_nat.egress",
+      "mode": "managed",
+      "type": "google_compute_router_nat",
+      "name": "egress",
+      "provider_name": "registry.opentofu.org/hashicorp/google",
+      "change": {
+        "actions": ["create"],
+        "before": null,
+        "after": {
+          "name": "foundation-egress-nat",
+          "nat_ip_allocate_option": "AUTO_ONLY"
+        }
+      }
+    }
+  ]
+}

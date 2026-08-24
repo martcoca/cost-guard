@@ -24,6 +24,7 @@ assert_exit() {
 
 assert_exit 1 "${root_dir}/tests/fixtures/plan-with-nat.json"
 assert_exit 1 "${root_dir}/tests/fixtures/plan-events-with-nat.jsonl"
+assert_exit 1 "${root_dir}/tests/fixtures/plan-with-gcp-nat.json"
 assert_exit 0 "${root_dir}/tests/fixtures/plan-clean.json"
 assert_exit 2 "${root_dir}/tests/fixtures/plan-errored.jsonl"
 assert_exit 2 "${root_dir}/tests/fixtures/plan-unrecognizable.txt"

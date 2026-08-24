@@ -10,6 +10,11 @@
     "monthly_cost": "~$32/mo"
   },
   {
+    "resource_type": "google_compute_router_nat",
+    "resource": "Cloud NAT",
+    "monthly_cost": "~$32/mo"
+  },
+  {
     "resource_type": "aws_lb",
     "resource": "ALB / NLB",
     "monthly_cost": "~$16–20/mo"
