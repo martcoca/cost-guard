@@ -10,10 +10,11 @@ name: Auto-merge
 # 2. A check that has not finished is treated as "not yet", never as "go ahead". Green by
 #    absence is the failure mode this organization keeps finding.
 #
-# The `workflows:` list must name every other workflow here. Omitting it does not mean
-# "all" — it matches nothing and auto-merge never fires, which looks exactly like a pull
-# request sitting green and unmerged. check-automerge-coverage.sh asserts the list is
-# complete, so adding a workflow without listing it fails CI.
+# The `workflows:` list must name every other workflow in the repository. Omitting the
+# list does not mean "all" — it matches nothing and auto-merge never fires at all, which
+# looks exactly like a pull request sitting green and unmerged.
+# `check-automerge-coverage.sh` asserts the list is complete, so adding a workflow without
+# listing it fails CI rather than silently disabling or short-circuiting the gate.
 
 on:
   workflow_run:
@@ -26,6 +27,11 @@ permissions:
   # Dispatching the default-branch workflows the merge push cannot trigger needs this.
   # Without it the dispatch returns 403 and the merged commit goes unverified.
   actions: write
+  # Declaring any permissions block sets every unlisted scope to `none`. Reading check
+  # runs therefore needs saying so explicitly. A public repository hides this — its check
+  # runs are readable anonymously — so the omission only surfaces on a private one, as a
+  # 403 that looks identical to the token problems that came before it.
+  checks: read
 
 jobs:
   merge:
