@@ -73,9 +73,60 @@ soften_the_empty_input_path() {
 expect_suite_fails "aws_nat_gateway is removed from the denylist" hole_the_denylist
 expect_suite_fails "the empty-input path is softened to exit 0"  soften_the_empty_input_path
 
+# --- the same treatment for the rules this repository added later ---------------------
+#
+# A generalised version of the helper above: run any suite in the sandbox and require the
+# mutation to turn it red. The two rules below are the ones with no natural failing
+# fixture, so without these they would be asserted only by tests nobody has watched fail.
+expect_named_suite_fails() {
+  local suite=$1 description=$2 mutate=$3
+  local sandbox
+  sandbox=$(mktemp -d)
+  git -C "$root_dir" archive HEAD | tar -x -C "$sandbox"
+  "$mutate" "$sandbox"
+  if bash "${sandbox}/scripts/${suite}" >/dev/null 2>&1; then
+    printf 'FAIL: %s, and %s still passed.\n' "$description" "$suite" >&2
+    failed=1
+  else
+    printf 'PASS  %s, and %s failed\n' "$description" "$suite"
+  fi
+  rm -rf "$sandbox"
+}
+
+# The guard quietly acquires a network call. No fixture's expected exit code changes, and
+# every other suite in this repository stays green — which is exactly why this mutation is
+# worth having a test for.
+give_the_guard_a_network_call() {
+  local sandbox=$1
+  perl -0pi -e 's/^(plan_input=\$\(cat -- "\$plan_file"\))$/curl -s https:\/\/example.invalid\/denylist >\/dev\/null 2>&1 || true\n$1/m' \
+    "${sandbox}/scripts/cost-guard.sh"
+  grep -q 'curl -s' "${sandbox}/scripts/cost-guard.sh" \
+    || { printf 'mutation did not apply cleanly\n' >&2; exit 1; }
+}
+
+# The freshness signal reports a lookup it could not perform as `current`. This is the
+# precise defect the epic exists to remove, so it must not be possible to reintroduce it
+# without a test going red.
+report_unknown_as_current() {
+  local sandbox=$1
+  local f="${sandbox}/scripts/freshness.sh"
+  # Every branch that concludes `unknown` now concludes `current` instead. The guard below
+  # asserts the word is gone entirely, rather than asserting a string that was already in
+  # the file for another reason — a mutation check that passes without mutating is worse
+  # than no check, because it reports the suite as sound.
+  perl -pi -e 's/^(\s*)status=unknown$/${1}status=current/' "$f"
+  ! grep -q 'status=unknown' "$f" \
+    || { printf 'mutation did not apply cleanly\n' >&2; exit 1; }
+}
+
+expect_named_suite_fails test-no-network.sh \
+  "the guard is given a network call" give_the_guard_a_network_call
+expect_named_suite_fails test-freshness.sh \
+  "an unknown lookup is reported as current" report_unknown_as_current
+
 if [ "$failed" -ne 0 ]; then
   printf '\nThe suite cannot detect a broken guard. It is not evidence of anything.\n' >&2
   exit 1
 fi
 
-printf '\nThe suite reacts to a broken denylist and to a broken fail-closed path.\n'
+printf '\nThe suite reacts to a broken denylist, a broken fail-closed path, a guard that\nreaches for the network, and a freshness signal that calls unknown current.\n'
