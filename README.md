@@ -181,10 +181,12 @@ correct, and catastrophically slow, because bash rebuilds the whole string to do
 | 5.9 KB | 1.2 s | 0.002 s |
 | 11.8 KB | 7.0 s | 0.002 s |
 | 23.5 KB | 45 s | 0.002 s |
-| 51 KB (real `tofu show -json`) | never finished | 0.12 s |
+| 51 KB (real `tofu show -json`) | 391 s | 0.12 s |
 
-It did not fail. It hung — a guarded plan job sitting at no output until the job timeout,
-looking like a stalled runner and burning metered minutes. Every test passed throughout,
+It did not fail, and it did not hang forever either — it eventually returns the *correct*
+verdict, six and a half minutes later. That is worse than a crash, not better: a guarded
+plan job sits at no output for long enough to look like a stalled runner, gets killed by a
+job timeout or an impatient operator, and bills for the wait. Every test passed throughout,
 because **every negative case was about content and none was about size.**
 
 `tests/fixtures/plan-large-*.json` are real `tofu show -json` output from a stack of
