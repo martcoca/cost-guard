@@ -119,6 +119,21 @@ report_unknown_as_current() {
     || { printf 'mutation did not apply cleanly\n' >&2; exit 1; }
 }
 
+# The defect this repository shipped: the empty-input check rewrites the whole plan string
+# instead of looking for one character in it. It passes every content-based test, because
+# it is still correct — it is only unusably slow, and only on inputs larger than any
+# fixture the suite had before.
+restore_the_quadratic_empty_check() {
+  local sandbox=$1
+  local guard="${sandbox}/scripts/cost-guard.sh"
+  perl -0pi -e 's/if \[\[ ! "\$plan_input" =~ \[\^\[:space:\]\] \]\]; then/if [[ -z "\${plan_input\/\/[[:space:]]\/}" ]]; then/' "$guard"
+  grep -q 'plan_input//' <(sed 's/#.*//' "$guard") \
+    || { printf 'mutation did not apply cleanly\n' >&2; exit 1; }
+}
+
+expect_named_suite_fails test-plan-size.sh \
+  "the quadratic empty-input check is restored" restore_the_quadratic_empty_check
+
 expect_named_suite_fails test-no-network.sh \
   "the guard is given a network call" give_the_guard_a_network_call
 expect_named_suite_fails test-freshness.sh \
@@ -129,4 +144,4 @@ if [ "$failed" -ne 0 ]; then
   exit 1
 fi
 
-printf '\nThe suite reacts to a broken denylist, a broken fail-closed path, a guard that\nreaches for the network, and a freshness signal that calls unknown current.\n'
+printf '\nThe suite reacts to a broken denylist, a broken fail-closed path, a guard that\nis too slow to finish, one that reaches for the network, and a freshness signal\nthat calls unknown current.\n'

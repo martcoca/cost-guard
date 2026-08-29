@@ -30,7 +30,19 @@ fi
 # must not produce the same verdict.
 plan_input=$(cat -- "$plan_file")
 
-if [[ -z "${plan_input//[[:space:]]/}" ]]; then
+# "The input is empty or whitespace-only" is tested by looking for a single non-whitespace
+# character, not by deleting every whitespace character and asking whether anything is
+# left. The two are logically identical and cost wildly different amounts.
+#
+# The deleting form — `[[ -z "${plan_input//[[:space:]]/}" ]]` — makes bash build a new
+# copy of the whole plan, and it degrades far worse than linearly: measured on real plan
+# JSON, 5.9 KB took 1.2 s, 11.8 KB took 7.0 s, and 23.5 KB took 45 s. A 51 KB plan never
+# finished. The match form below is flat: 0.002 s at 5.9 KB, 0.004 s at 415 KB.
+#
+# This check is not weakened by being fast. Empty and whitespace-only input still exit 2,
+# for the same reason as before: "no denied resources" and "no plan" must not produce the
+# same verdict. Only the arithmetic changed.
+if [[ ! "$plan_input" =~ [^[:space:]] ]]; then
   printf 'cost-guard: empty input; refusing to report a plan as clean.\n' >&2
   exit 2
 fi
