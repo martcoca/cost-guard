@@ -10,6 +10,7 @@ Check, and enough context to execute without reading another repository.
 | 1 | [`0010-E01-T01.md`](0010-E01-T01.md) | done | Move the guard and the denylist here, and give them an interface another repository's CI can consume without copying either file |
 | 2 | [`0010-E01-T05.md`](0010-E01-T05.md) | done | One denylist change, demonstrably enforced by all three clouds. The initiative's actual claim, currently untested |
 | 3 | [`0010-E02-T01.md`](0010-E02-T01.md) | done | Report an out-of-date pin, without giving the guard's verdict a network dependency |
+| 3 | [`0010-E02-T02.md`](0010-E02-T02.md) | not started | The guard hangs on a 47 KB plan. Fix it, and give the suite a size test that would have caught it |
 
 Take the packet the Founder names. Otherwise take the next one in this table whose
 `Status:` is not `done`. The table is the order; the numbers are only identity.
