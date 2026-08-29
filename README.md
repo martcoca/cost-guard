@@ -159,6 +159,7 @@ demonstrated reasons it does not work on these consumers yet.
 | `scripts/test-cost-guard.sh` | the exit contract across six inputs |
 | `scripts/test-suite-can-fail.sh` | that the suite above can actually go red |
 | `scripts/demo-consumer.sh` | the action working from a repository holding neither file |
+| `scripts/test-plan-size.sh` | a real ≥50 KB plan gets the right verdict inside a time budget |
 | `scripts/test-freshness.sh` | every freshness rule, against a stubbed API |
 | `scripts/test-no-network.sh` | the exit contract with the network actually removed |
 | `scripts/probe-propagation.sh` | whether a given pin enforces a given plan |
@@ -167,6 +168,33 @@ All three run in CI on every push. `demo-consumer.sh` builds a throwaway consume
 repository and runs the action's real entrypoint against plans that repository wrote
 itself; the `manifest` job covers the half a shell script cannot, where the runner resolves
 `uses:` and binds the inputs and outputs for real.
+
+## The guard has to survive a real plan
+
+The fixtures a guard is written against are small. The plans it runs against are not, and
+they grow with the infrastructure being guarded. `v1.0.1` and earlier tested emptiness by
+deleting every whitespace character from the plan and asking whether anything remained —
+correct, and catastrophically slow, because bash rebuilds the whole string to do it:
+
+| Plan size | Deleting the whitespace | Looking for one non-whitespace character |
+|---|---|---|
+| 5.9 KB | 1.2 s | 0.002 s |
+| 11.8 KB | 7.0 s | 0.002 s |
+| 23.5 KB | 45 s | 0.002 s |
+| 51 KB (real `tofu show -json`) | never finished | 0.12 s |
+
+It did not fail. It hung — a guarded plan job sitting at no output until the job timeout,
+looking like a stalled runner and burning metered minutes. Every test passed throughout,
+because **every negative case was about content and none was about size.**
+
+`tests/fixtures/plan-large-*.json` are real `tofu show -json` output from a stack of
+distinct resources — not one string repeated to length, which would be a different input
+shape than the one that found this. `scripts/test-plan-size.sh` asserts a correct verdict
+inside a time budget *and* that the string-rewriting shape cannot return, and it asserts
+the fixtures are still large, so it cannot be defanged by quietly swapping in a small one.
+
+**If you write a check over the whole plan, do not rewrite the string.** Test for the
+presence of what you are looking for, or hand the work to `jq`, which streams.
 
 ## Layout
 

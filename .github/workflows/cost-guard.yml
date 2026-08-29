@@ -29,6 +29,12 @@ jobs:
       - name: The suite must be able to fail
         run: bash scripts/test-suite-can-fail.sh
 
+      # Every other negative case in this suite is about content. This one is about
+      # size, which is the gap that let a released guard hang on a real plan while
+      # passing everything it had.
+      - name: The guard survives a realistically-sized plan
+        run: bash scripts/test-plan-size.sh
+
       - name: The freshness signal obeys its own rules
         run: bash scripts/test-freshness.sh
 
