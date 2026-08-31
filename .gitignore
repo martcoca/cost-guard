@@ -1,2 +1,5 @@
 node_modules/
 .DS_Store
+
+# Real values, credentials and apply inputs. Never committed.
+config/local/
