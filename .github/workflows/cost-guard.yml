@@ -19,6 +19,8 @@ jobs:
   exit-contract:
     name: Exit-code contract
     runs-on: ubuntu-latest
+    # A job with no cap can burn to GitHub's 6-hour default. One did: 4h19m.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -52,6 +54,8 @@ jobs:
   consumer:
     name: Consumed from another repository
     runs-on: ubuntu-latest
+    # A job with no cap can burn to GitHub's 6-hour default. One did: 4h19m.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -65,6 +69,8 @@ jobs:
   manifest:
     name: Action manifest resolves on a runner
     runs-on: ubuntu-latest
+    # A job with no cap can burn to GitHub's 6-hour default. One did: 4h19m.
+    timeout-minutes: 30
     # scripts/demo-consumer.sh cannot prove that GitHub itself accepts action.yml, because
     # resolving `uses:` is the runner's job and not something a shell script can stand in
     # for. This job covers that half: the runner parses the manifest, binds the inputs and
@@ -126,6 +132,8 @@ jobs:
   freshness:
     name: Freshness reported through the action
     runs-on: ubuntu-latest
+    # A job with no cap can burn to GitHub's 6-hour default. One did: 4h19m.
+    timeout-minutes: 30
     # scripts/test-freshness.sh covers the rules with a stubbed API. This covers what a
     # stub cannot: that the runner resolves the sub-action, binds its inputs and outputs,
     # and that a real release lookup against a real repository behaves as documented.
