@@ -11,3 +11,4 @@ runtime/
 *.tfstate.*
 *.tfplan
 *.tfvars
+.agentic/
